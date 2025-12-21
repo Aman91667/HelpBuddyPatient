@@ -142,8 +142,17 @@ const HistoryPage = () => {
 
                     {service.fare && (
                       <div className="ml-3 flex items-center flex-col text-right">
-                        <div className="text-xs text-slate-400">Fare Paid</div>
-                        <div className="text-lg font-bold text-slate-800">₹{service.fare.toFixed(2)}</div>
+                        <div className="text-xs text-slate-400">Amount Paid</div>
+                        <div className="text-lg font-bold text-slate-800">
+                          ₹{(() => {
+                            // Patient should see only service charge (billedMinutes * 2.5), not platform fee
+                            if (service.billedMinutes) {
+                              return (service.billedMinutes * 2.5).toFixed(2);
+                            }
+                            // Fallback: if billedMinutes not available, calculate from fare (fare - 15)
+                            return (service.fare - 15).toFixed(2);
+                          })()}
+                        </div>
                       </div>
                     )}
                   </div>

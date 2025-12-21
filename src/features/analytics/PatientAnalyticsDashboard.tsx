@@ -87,7 +87,7 @@ export default function PatientAnalyticsDashboard() {
   const summaryCards = [
     {
       title: 'Total Spending',
-      value: `$${totalSpending.toFixed(2)}`,
+      value: `₹${totalSpending.toFixed(2)}`,
       icon: DollarSign,
       color: 'text-emerald-500',
       bgColor: 'bg-emerald-50',
@@ -103,7 +103,7 @@ export default function PatientAnalyticsDashboard() {
     },
     {
       title: 'Avg per Service',
-      value: `$${avgPerService.toFixed(2)}`,
+      value: `₹${avgPerService.toFixed(2)}`,
       icon: TrendingUp,
       color: 'text-purple-500',
       bgColor: 'bg-purple-50',
@@ -219,7 +219,7 @@ export default function PatientAnalyticsDashboard() {
                       strokeWidth={3}
                       dot={{ fill: '#10b981', r: 4 }}
                       activeDot={{ r: 6 }}
-                      name="Spending ($)"
+                      name="Spending (₹)"
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -311,7 +311,7 @@ export default function PatientAnalyticsDashboard() {
                             </span>
                           </div>
                           <p className="text-xs text-slate-500">
-                            ${helper.totalSpent?.toFixed(2) || '0.00'}
+                            ₹${helper.totalSpent?.toFixed(2) || '0.00'}
                           </p>
                         </div>
                       </motion.div>

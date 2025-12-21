@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3000/realtime';
+const WS_URL = import.meta.env.VITE_WS_URL || 'https://helpbuddyback.onrender.com/realtime';
 
 class SocketClient {
   private socket: Socket | null = null;

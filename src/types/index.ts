@@ -72,6 +72,7 @@ export interface Service {
   description?: string;
   status: ServiceStatus;
   fare?: number;
+  billedMinutes?: number;
   rating?: number;
   review?: string;
   estimatedHelpers?: number;

@@ -213,7 +213,7 @@ export default function TrackingPage() {
 
     // Try refreshing token and retry
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://helpbuddyback.onrender.com/api';
       const resp = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
       const j = await resp.json().catch(() => null);
       const parsed = j as { success?: boolean; data?: { accessToken?: string } } | null;

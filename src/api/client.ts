@@ -7,7 +7,7 @@ import type { AuthResponse, ApiResponse } from '@/types';
 // production, allow an explicit VITE_API_URL to override the base.
 const API_URL = (import.meta.env.DEV)
   ? '/api'
-  : (import.meta.env.VITE_API_URL || 'http://localhost:3000/api');
+  : (import.meta.env.VITE_API_URL || 'https://helpbuddyback.onrender.com/api');
 
 class ApiClient {
   private client: AxiosInstance;

@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // try silent refresh using httpOnly refresh cookie or stored fallback
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const API_URL = import.meta.env.VITE_API_URL || 'https://helpbuddyback.onrender.com/api';
         // Deduplicate concurrent refresh attempts within this provider
         if (!refreshPromiseRef.current) {
           const fetchOptions: RequestInit = { method: 'POST', credentials: 'include' };
@@ -157,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         // If /auth/me failed, attempt a single silent refresh and retry once
         try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+          const API_URL = import.meta.env.VITE_API_URL || 'https://helpbuddyback.onrender.com/api';
           if (!refreshPromiseRef.current) {
             refreshPromiseRef.current = (async () => {
               const resp = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
