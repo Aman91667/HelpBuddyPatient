@@ -41,7 +41,7 @@ export default function TrackingPage() {
   const [helperLocation, setHelperLocation] = useState<Location | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [hasRated, setHasRated] = useState(false);
+  // const [hasRated, setHasRated] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -239,7 +239,7 @@ export default function TrackingPage() {
       const response = await apiClient.rateService(serviceId, rating, comment);
       if (response.success) {
         toast.success('Rating submitted successfully!');
-        setHasRated(true);
+        // setHasRated(true);
         setShowRatingModal(false);
         navigate(`/payment/${serviceId}`);
       } else {
