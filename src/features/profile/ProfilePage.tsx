@@ -23,7 +23,7 @@ const ProfilePage = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white pb-8 pb-safe">
       {/* Header with logo */}
       <motion.header
         initial={{ y: -18, opacity: 0 }}

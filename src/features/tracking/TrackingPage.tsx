@@ -297,7 +297,7 @@ export default function TrackingPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="max-w-5xl mx-auto px-4 py-4 pb-28 sm:pb-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left card */}
         <section className="lg:col-span-1">
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="rounded-2xl p-4 shadow-2xl bg-white">
@@ -380,14 +380,14 @@ export default function TrackingPage() {
         {!showChat && service.status !== 'COMPLETED' && service.status !== 'CANCELLED' && (
           <section className="lg:col-span-2">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08 }} className="rounded-2xl overflow-hidden shadow-lg bg-white">
-              <div className={`h-[52vh] md:h-[64vh] lg:h-[70vh] relative ${showCancelDialog ? 'pointer-events-none blur-sm opacity-50' : ''}`}>
-              <Map
-                center={helperLocation || service.patientLocation}
-                markers={markers}
-                height="100%"
-                fitToMarkers
-                className="bg-white/80 dark:bg-slate-900/60"
-              />
+              <div className={`relative ${showCancelDialog ? 'pointer-events-none blur-sm opacity-50' : ''}`} style={{ height: 'calc(100vh - var(--app-header-height,64px) - var(--app-bottom-height,88px))' }}>
+                <Map
+                  center={helperLocation || service.patientLocation}
+                  markers={markers}
+                  height="calc-vh"
+                  fitToMarkers
+                  className="bg-white/80 dark:bg-slate-900/60"
+                />
 
               {/* Floating info card on map */}
               <div className="absolute left-4 bottom-16 sm:bottom-12 w-[calc(100%-32px)] sm:w-96">
@@ -437,7 +437,8 @@ export default function TrackingPage() {
               initial={{ opacity: 0, scale: 0.95 }} 
               animate={{ opacity: 1, scale: 1 }} 
               transition={{ duration: 0.2 }}
-              className="h-[52vh] md:h-[64vh] lg:h-[70vh]"
+              className="relative"
+              style={{ height: 'calc(100vh - var(--app-header-height,64px) - var(--app-bottom-height,88px))' }}
             >
               <ChatWindow
                 serviceId={service.id}

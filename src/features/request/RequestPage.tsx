@@ -112,7 +112,7 @@ export default function RequestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-8 pb-safe">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-start gap-8 lg:gap-12">
 

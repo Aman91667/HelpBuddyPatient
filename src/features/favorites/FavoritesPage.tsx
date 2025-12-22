@@ -61,7 +61,7 @@ const FavoritesPage = () => {
   };
 
   return (
-    <div className="min-h-screen pb-6">
+    <div className="min-h-screen pb-6 pb-safe">
       {/* Header */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}

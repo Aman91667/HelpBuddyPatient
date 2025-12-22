@@ -65,7 +65,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 pb-28">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 pb-28 pb-safe">
       {/* Top bar */}
       <motion.div
         initial={{ y: -12, opacity: 0 }}

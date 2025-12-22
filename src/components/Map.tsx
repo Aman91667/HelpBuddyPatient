@@ -110,8 +110,15 @@ export const Map = ({ center, markers = [], zoom = 17, height = '400px', fitToMa
 
   const centerPos: [number, number] = [center.lat, center.lng];
 
+  // Allow callers to request a viewport-aware full-height map using the
+  // special height token `calc-vh`. This computes: 100vh - header - bottom.
+  const resolvedHeight =
+    height === 'calc-vh'
+      ? `calc(100vh - var(--app-header-height,64px) - var(--app-bottom-height,88px))`
+      : height;
+
   return (
-    <div className={`w-full rounded-2xl border border-border bg-card shadow-xl overflow-hidden ${className}`} style={{ height }}>
+    <div className={`w-full rounded-2xl border border-border bg-card shadow-xl overflow-hidden ${className}`} style={{ height: resolvedHeight }}>
       <MapContainer
         center={centerPos}
         zoom={zoom}

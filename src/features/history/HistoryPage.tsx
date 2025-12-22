@@ -64,7 +64,7 @@ const HistoryPage = () => {
   const services = history?.services ?? [];
 
   return (
-    <div className="min-h-screen pb-6 bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen pb-6 pb-safe bg-gradient-to-b from-slate-50 to-white">
       {/* Header */}
       <motion.header
         initial={{ y: -16, opacity: 0 }}
