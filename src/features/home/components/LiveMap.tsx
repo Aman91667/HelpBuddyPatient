@@ -52,6 +52,8 @@ const createPulseIcon = (color = '#059669') => {
 
 const LocationMarker = ({ onAddress, setSelectedLatLng }: { onAddress?: (address: string) => void; setSelectedLatLng?: (pos: [number, number] | null) => void }) => {
   const [position, setPosition] = useState<[number, number] | null>(null);
+  const [locationPermission, setLocationPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+  
   const map = useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
@@ -69,11 +71,30 @@ const LocationMarker = ({ onAddress, setSelectedLatLng }: { onAddress?: (address
     locationfound(e) {
       setPosition([e.latlng.lat, e.latlng.lng]);
       map.flyTo(e.latlng, map.getZoom());
+      setLocationPermission('granted');
+    },
+    locationerror(e) {
+      console.warn('Map location error:', e.message);
+      setLocationPermission('denied');
     },
   });
 
   useEffect(() => {
-    map.locate();
+    // Try to get current location with permission request
+    if (navigator.geolocation && navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        setLocationPermission(result.state);
+        if (result.state === 'granted' || result.state === 'prompt') {
+          map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true });
+        }
+      }).catch(() => {
+        // Fallback if permissions API not supported
+        map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true });
+      });
+    } else {
+      // Fallback if permissions API not available
+      map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true });
+    }
   }, [map]);
 
   return position === null ? null : (

@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Navigate } from 'react-router-dom';
+import OTPPopup from '@/components/OTPPopup';
 
 const otpRequestSchema = z.object({
   value: z.string()
@@ -32,6 +33,8 @@ export default function AuthPage() {
   const [contactType, setContactType] = useState<'PHONE' | 'EMAIL'>('PHONE');
   const [contactValue, setContactValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showOTPPopup, setShowOTPPopup] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
 
   const requestForm = useForm<OTPRequestForm>({ resolver: zodResolver(otpRequestSchema) });
   const verifyForm = useForm<OTPVerifyForm>({ resolver: zodResolver(otpVerifySchema) });
@@ -40,9 +43,17 @@ export default function AuthPage() {
 
   const handleRequestOTP = async (data: OTPRequestForm) => {
     setIsLoading(true);
-    const success = await requestOTP({ type: contactType, value: data.value });
+    const result = await requestOTP({ type: contactType, value: data.value });
     setIsLoading(false);
-    if (success) { setContactValue(data.value); setStep('verify'); }
+    if (result.success) { 
+      setContactValue(data.value);
+      setStep('verify');
+      // Show OTP popup if code is returned
+      if (result.code) {
+        setOtpCode(result.code);
+        setShowOTPPopup(true);
+      }
+    }
   };
 
   const handleVerifyOTP = async (data: OTPVerifyForm) => {
@@ -184,6 +195,16 @@ export default function AuthPage() {
           </div>
         </main>
       </motion.div>
+
+      {/* OTP Popup */}
+      {showOTPPopup && otpCode && (
+        <OTPPopup
+          otp={otpCode}
+          phone={contactValue}
+          onClose={() => setShowOTPPopup(false)}
+          duration={30000} // 30 seconds
+        />
+      )}
     </div>
   );
 }

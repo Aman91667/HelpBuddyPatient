@@ -334,8 +334,8 @@ export default function TrackingPage() {
                 )}
               </div>
 
-              {/* OTP Display - Prominent when helper accepted */}
-              {(service.status === 'ACCEPTED' || service.status === 'HELPER_ARRIVED') && service.otpCode && (
+              {/* OTP Display - Show as soon as service is created */}
+              {service.otpCode && (
                 <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg">
                   <div className="text-sm font-medium mb-2 flex items-center gap-2">
                     <Target className="w-4 h-4" />

@@ -11,7 +11,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  requestOTP: (data: OTPRequest) => Promise<boolean>;
+  requestOTP: (data: OTPRequest) => Promise<{ success: boolean; code?: string }>;
   verifyOTP: (data: OTPVerify) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -205,20 +205,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const requestOTP = async (data: OTPRequest): Promise<boolean> => {
+  const requestOTP = async (data: OTPRequest): Promise<{ success: boolean; code?: string }> => {
     try {
       // Backend expects { phone: string, role?: 'PATIENT' | 'HELPER' }
       const payload = data.type === 'PHONE' 
         ? { phone: data.value, role: 'PATIENT' as const }
         : { phone: data.value, role: 'PATIENT' as const }; // Email not supported yet, send as phone
       
-      const response = await apiClient.post('/auth/request-otp', payload);
+      const response = await apiClient.post<{ success: boolean; code?: string }>('/auth/request-otp', payload);
       if (response.success) {
         toast.success('OTP sent successfully');
-        return true;
+        return { success: true, code: (response as any).code };
       } else {
         toast.error(response.error || 'Failed to send OTP');
-        return false;
+        return { success: false };
       }
     } catch (error: any) {
       // Log the full error for debugging
@@ -233,7 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         toast.error('Failed to send OTP');
       }
-      return false;
+      return { success: false };
     }
   };
 
