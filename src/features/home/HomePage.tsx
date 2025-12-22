@@ -14,12 +14,55 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/core/config/constants';
 import logo from '@/assets/logo.png';
+import { apiClient } from '@/api/client';
+import { useEffect, useState } from 'react';
 
 // Premium / modern HomePage (mobile-first responsive tweaks)
 export default function HomePage() {
   const { user, logout } = useAuth();
   const { location, isLoading: locationLoading, refetch } = useGeolocation();
   const navigate = useNavigate();
+
+  const [nearbyHelpers, setNearbyHelpers] = useState<number | null>(null);
+  const [requestsToday, setRequestsToday] = useState<number | null>(null);
+  const [satisfaction, setSatisfaction] = useState<number | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchSummary = async () => {
+      try {
+        const [breakdownResp, favResp] = await Promise.all([
+          apiClient.getPatientServiceBreakdown(),
+          apiClient.getFavoriteHelpers(5),
+        ]);
+
+        if (!mounted) return;
+
+        if (breakdownResp.success && breakdownResp.data) {
+          const breakdown = breakdownResp.data as any;
+          // Total active/ongoing requests today (approx): use breakdown's recent count if available
+          const total = (breakdown.breakdown || []).reduce((s: number, it: any) => s + (it.count || 0), 0);
+          setRequestsToday(total || 0);
+        }
+
+        if (favResp.success && favResp.data) {
+          const favs = favResp.data as any[];
+          setNearbyHelpers(favs.length || 0);
+          // approximate satisfaction by averaging helper avgRating in favorites
+          if (favs.length > 0) {
+            const avg = favs.reduce((s: number, it: any) => s + (it.avgRating || 0), 0) / favs.length;
+            setSatisfaction(Number(avg.toFixed(1)));
+          }
+        }
+      } catch (e) {
+        // ignore — keep UI stable
+      }
+    };
+
+    fetchSummary();
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 pb-28">
@@ -32,9 +75,9 @@ export default function HomePage() {
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            
-              <img src={logo} alt="HelpBudy Logo" className="w-9 h-9 sm:w-11 sm:h-11 object-contain" />
-            
+
+            <img src={logo} alt="HelpBudy Logo" className="w-9 h-9 sm:w-11 sm:h-11 object-contain" />
+
             <div>
               <h1 className="text-lg sm:text-2xl font-extrabold leading-tight text-slate-900">HelpBudy</h1>
               <p className="text-xs sm:text-sm text-slate-600">Welcome back, <span className="font-medium">{user?.name}</span></p>
@@ -102,8 +145,20 @@ export default function HomePage() {
                 ) : (
                   <div className="h-full flex items-center justify-center bg-slate-100">
                     <div className="text-center px-4">
-                      <Loader2 className="h-10 w-10 animate-spin mx-auto mb-2 text-emerald-500" />
-                      <p className="text-sm text-slate-600">Fetching location — enable location services</p>
+                      {locationLoading ? (
+                        <>
+                          <Loader2 className="h-10 w-10 animate-spin mx-auto mb-2 text-emerald-500" />
+                          <p className="text-sm text-slate-600">Fetching location...</p>
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="h-10 w-10 mx-auto mb-2 text-slate-400" />
+                          <p className="text-sm text-slate-600 mb-3">Location access needed</p>
+                          <Button onClick={refetch} variant="default" size="sm" className="bg-emerald-500 hover:bg-emerald-600">
+                            Enable Location
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -115,18 +170,18 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-xl p-3 bg-white shadow-lg border">
               <p className="text-xs text-slate-500">Nearby Helpers</p>
-              <h4 className="text-base sm:text-lg font-bold text-slate-900">12 within 2 km</h4>
+              <h4 className="text-base sm:text-lg font-bold text-slate-900">{nearbyHelpers !== null ? `${nearbyHelpers} within 2 km` : '—'}</h4>
             </div>
             <div className="rounded-xl p-3 bg-white shadow-lg border">
               <p className="text-xs text-slate-500">Requests Today</p>
-              <h4 className="text-base sm:text-lg font-bold text-slate-900">3 active</h4>
+              <h4 className="text-base sm:text-lg font-bold text-slate-900">{requestsToday !== null ? `${requestsToday} active` : '—'}</h4>
             </div>
             <div className="rounded-xl p-3 bg-white shadow-lg border">
               <p className="text-xs text-slate-500">Satisfaction</p>
-              <h4 className="text-base sm:text-lg font-bold text-slate-900">4.9 ★</h4>
+              <h4 className="text-base sm:text-lg font-bold text-slate-900">{satisfaction !== null ? `${satisfaction} ★` : '—'}</h4>
             </div>
           </div>
         </motion.section>

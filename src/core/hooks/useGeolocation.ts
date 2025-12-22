@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Location } from '@/types';
 import { toast } from 'sonner';
 
@@ -8,51 +8,25 @@ export const useGeolocation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown');
 
-  const requestLocationPermission = async () => {
+  // Use a ref to store the watch ID so we can clear it
+  const watchIdRef = useRef<number | null>(null);
+
+  const startWatching = () => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
       toast.error('Geolocation is not supported');
-      return false;
+      return;
     }
 
-    try {
-      // Check if Permissions API is available
-      if ('permissions' in navigator) {
-        const result = await navigator.permissions.query({ name: 'geolocation' });
-        setPermissionStatus(result.state);
-        
-        if (result.state === 'denied') {
-          toast.error('Location permission denied. Please enable it in your browser settings.');
-          setError('Location permission denied');
-          return false;
-        }
-        
-        if (result.state === 'prompt') {
-          toast.info('Please allow location access to continue');
-        }
-        
-        // Listen for permission changes
-        result.addEventListener('change', () => {
-          setPermissionStatus(result.state);
-        });
-      }
-      
-      return true;
-    } catch (err) {
-      // Permissions API not fully supported, proceed with geolocation request
-      console.warn('Permissions API not available:', err);
-      return true;
+    // Clear any existing watch
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
     }
-  };
-
-  const getCurrentLocation = async () => {
-    const hasPermission = await requestLocationPermission();
-    if (!hasPermission) return;
 
     setIsLoading(true);
     setError(null);
 
-    navigator.geolocation.getCurrentPosition(
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         setLocation({
           lat: position.coords.latitude,
@@ -62,29 +36,53 @@ export const useGeolocation = () => {
         setIsLoading(false);
       },
       (err) => {
+        let errorMessage = 'Failed to get your location';
         if (err.code === err.PERMISSION_DENIED) {
           setPermissionStatus('denied');
-          setError('Location permission denied');
-          toast.error('Location permission denied. Please enable it in your browser settings.');
+          errorMessage = 'Location permission denied. Please enable it in your browser settings.';
         } else if (err.code === err.TIMEOUT) {
-          setError('Location request timed out');
-          toast.error('Location request timed out. Please try again.');
+          errorMessage = 'Location request timed out. Retrying...';
+          // Don't clear loading state on timeout in watch mode, it might succeed next time
         } else {
-          setError(err.message);
-          toast.error('Failed to get your location');
+          errorMessage = err.message;
+          setIsLoading(false);
         }
-        setIsLoading(false);
+
+        setError(errorMessage);
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error(errorMessage);
+          setIsLoading(false);
+        }
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
+        timeout: 20000,
+        maximumAge: 5000, // Accept slightly cached positions for better performance
       }
     );
   };
 
+  // Check permission status without requesting it, just for UI state
   useEffect(() => {
-    getCurrentLocation();
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        setPermissionStatus(result.state);
+        result.addEventListener('change', () => {
+          setPermissionStatus(result.state);
+        });
+      }).catch(() => {
+        // Ignore errors if permissions API is not supported
+      });
+    }
+
+    startWatching();
+
+    // Cleanup on unmount
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
   }, []);
 
   return {
@@ -92,6 +90,6 @@ export const useGeolocation = () => {
     error,
     isLoading,
     permissionStatus,
-    refetch: getCurrentLocation,
+    refetch: startWatching,
   };
 };

@@ -30,7 +30,7 @@ const services = [
 
 export default function RequestPage() {
   const navigate = useNavigate();
-  const { location } = useGeolocation();
+  const { location, permissionStatus, refetch } = useGeolocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [estimatedTime] = useState(4);
 
@@ -52,7 +52,7 @@ export default function RequestPage() {
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&addressdetails=1`
           );
           const data = await response.json();
-          
+
           if (data.display_name) {
             // Set the complete address
             setValue('landmark', data.display_name);
@@ -66,7 +66,7 @@ export default function RequestPage() {
           setValue('landmark', `Lat ${location.lat.toFixed(4)}, Lng ${location.lng.toFixed(4)}`);
         }
       };
-      
+
       // Only auto-fill if landmark is empty or contains coordinates
       if (!watchedLandmark || watchedLandmark.includes('Lat ')) {
         getAddress();
@@ -153,6 +153,22 @@ export default function RequestPage() {
                 <p className="text-xs text-slate-500 mb-3">📍 Detecting your location...</p>
               )}
 
+              {/* Permission prompt / info - explicit button to trigger geolocation prompt on mobile */}
+              {permissionStatus !== 'granted' && (
+                <div className="mb-3 p-3 rounded-md bg-yellow-50 border border-yellow-100 text-yellow-800 text-sm flex items-center justify-between">
+                  <div>
+                    {permissionStatus === 'denied' ? (
+                      <div>Location access is blocked. Enable it in your browser settings to auto-detect your position.</div>
+                    ) : (
+                      <div>Allow location access so we can detect your position automatically.</div>
+                    )}
+                  </div>
+                  <div>
+                    <button onClick={() => refetch()} className="ml-3 px-3 py-1 rounded bg-emerald-500 text-white text-sm">Enable</button>
+                  </div>
+                </div>
+              )}
+
               <label className="text-sm font-semibold mb-2 block">2. I need help with</label>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 {services.map(svc => {
@@ -232,7 +248,7 @@ export default function RequestPage() {
 
                   <div className="flex items-center gap-2">
                     <div className="text-sm text-slate-700 mr-2">{estimatedTime} min</div>
-                    <Button size="icon" className="rounded-full bg-white p-2 shadow-sm" onClick={() => window?.navigator?.geolocation?.getCurrentPosition?.(() => {})} aria-label="center">
+                    <Button size="icon" className="rounded-full bg-white p-2 shadow-sm" onClick={() => window.location.reload()} aria-label="refresh">
                       <Clock className="w-4 h-4" />
                     </Button>
                   </div>

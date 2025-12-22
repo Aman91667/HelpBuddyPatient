@@ -33,7 +33,7 @@ function MapControls({ setCenter }: { setCenter: (c: [number, number]) => void }
           map.locate({ setView: true, maxZoom: map.getZoom() });
         }}
       >
-        <svg className="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4 12h4"/><path d="M16 12h4"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg className="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="M4 12h4" /><path d="M16 12h4" /><circle cx="12" cy="12" r="3" /></svg>
       </button>
     </div>
   );
@@ -53,7 +53,7 @@ const createPulseIcon = (color = '#059669') => {
 const LocationMarker = ({ onAddress, setSelectedLatLng }: { onAddress?: (address: string) => void; setSelectedLatLng?: (pos: [number, number] | null) => void }) => {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [locationPermission, setLocationPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
-  
+
   const map = useMapEvents({
     click(e) {
       const { lat, lng } = e.latlng;
@@ -80,26 +80,13 @@ const LocationMarker = ({ onAddress, setSelectedLatLng }: { onAddress?: (address
   });
 
   useEffect(() => {
-    // Try to get current location with permission request
-    if (navigator.geolocation && navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        setLocationPermission(result.state);
-        if (result.state === 'granted' || result.state === 'prompt') {
-          map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true });
-        }
-      }).catch(() => {
-        // Fallback if permissions API not supported
-        map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true });
-      });
-    } else {
-      // Fallback if permissions API not available
-      map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true });
-    }
+    // Try to get current location
+    map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true });
   }, [map]);
 
   return position === null ? null : (
     <Marker position={position} icon={createPulseIcon()}>
-      <Popup className="text-sm">Selected location<br/><small className="text-muted">Click again to update</small></Popup>
+      <Popup className="text-sm">Selected location<br /><small className="text-muted">Click again to update</small></Popup>
     </Marker>
   );
 };
@@ -109,26 +96,14 @@ const LiveMap = ({ onAddress, height = '68vh', initialCenter = [26.9124, 75.7873
   const [selectedLatLng, setSelectedLatLng] = useState<[number, number] | null>(null);
   const mapRef = useRef(null);
 
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCenter([position.coords.latitude, position.coords.longitude]);
-        },
-        (error) => {
-          // keep default center
-          console.error('Geolocation error:', error);
-        }
-      );
-    }
-  }, []);
+  // Removed redundant geolocation check, LocationMarker handles it via map.locate()
 
   return (
     <div className={clsx('live-map-wrapper relative rounded-2xl overflow-hidden')} style={{ height }}>
-      <MapContainer 
-        center={center} 
-        zoom={zoom} 
-        style={{ height: '100%', width: '100%' }} 
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        style={{ height: '100%', width: '100%' }}
         ref={mapRef}
         scrollWheelZoom={true}
         zoomControl={true}
@@ -152,7 +127,7 @@ const LiveMap = ({ onAddress, height = '68vh', initialCenter = [26.9124, 75.7873
       <div className="absolute left-4 bottom-4 w-[calc(100%-32px)] sm:w-96">
         <div className="p-3 rounded-xl bg-white/95 backdrop-blur border border-gray-100 shadow flex items-center gap-3">
           <div className="w-10 h-10 rounded-md bg-emerald-50 flex items-center justify-center">
-            <svg className="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <svg className="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
           </div>
 
           <div className="flex-1 min-w-0">
@@ -168,7 +143,7 @@ const LiveMap = ({ onAddress, height = '68vh', initialCenter = [26.9124, 75.7873
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${selectedLatLng[0]}&lon=${selectedLatLng[1]}`)
                   .then((r) => r.json())
                   .then((d) => { if (d.display_name) onAddress(d.display_name); })
-                  .catch(() => {});
+                  .catch(() => { });
               }
             }}>Confirm</button>
           </div>

@@ -46,11 +46,18 @@ const FavoritesPage = () => {
   };
 
   const removeFavorite = async (helperId: string) => {
-    // Note: Backend doesn't have remove favorite endpoint yet
-    // For now, just remove from local state
-    // TODO: Implement backend endpoint for removing favorites
-    setFavorites(favorites.filter(f => f.id !== helperId));
-    toast.success('Removed from favorites');
+    try {
+      const resp = await apiClient.delete(`/patients/favorites/${helperId}`);
+      if (resp && resp.success) {
+        setFavorites(favorites.filter(f => f.id !== helperId));
+        toast.success('Removed from favorites');
+      } else {
+        toast.error(resp?.error || 'Failed to remove favorite');
+      }
+    } catch (e) {
+      console.error('Failed to remove favorite:', e);
+      toast.error('Failed to remove favorite');
+    }
   };
 
   return (
