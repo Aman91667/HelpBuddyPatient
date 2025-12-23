@@ -44,6 +44,15 @@ class ChatSocketClient {
       window.location.href = '/auth';
     });
 
+    // Persist rotated access tokens sent by the server during handshake or rotation
+    this.socket.on('auth:rotated', (payload: any) => {
+      try {
+        if (payload && payload.accessToken) {
+          localStorage.setItem('accessToken', payload.accessToken);
+        }
+      } catch (e) { /* ignore */ }
+    });
+
     return this.socket;
   }
 
@@ -66,7 +75,7 @@ class ChatSocketClient {
     this.serviceId = null;
   }
 
-  sendMessage(data: {
+  async sendMessage(data: {
     serviceId: string;
     messageType: 'TEXT' | 'IMAGE' | 'FILE' | 'VOICE' | 'TEMPLATE';
     messageText?: string;
@@ -80,7 +89,7 @@ class ChatSocketClient {
   }) {
     if (!this.socket) {
       console.warn('[ChatSocket] Socket not connected');
-      return;
+      return { success: false, error: 'socket-not-connected' };
     }
 
     // Ensure sender info is present for server-side createMessage validation
@@ -92,7 +101,15 @@ class ChatSocketClient {
       message: data.messageText ?? (data as any).message ?? undefined,
     } as any;
 
-    this.socket.emit('send:message', payload);
+    return new Promise((resolve) => {
+      try {
+        this.socket!.emit('send:message', payload, (res: any) => {
+          resolve(res);
+        });
+      } catch (e) {
+        resolve({ success: false, error: (e as any)?.message || 'emit failed' });
+      }
+    });
   }
 
   private _registerListener(event: string, callback: (...args: any[]) => void) {
@@ -104,7 +121,9 @@ class ChatSocketClient {
   }
 
   onNewMessage(callback: (message: any) => void) {
+    // Listen for both service-room broadcasts and direct-to-user message notifications
     this._registerListener('message:received', callback);
+    this._registerListener('message:new', callback);
   }
 
   onMessageRead(callback: (data: any) => void) {

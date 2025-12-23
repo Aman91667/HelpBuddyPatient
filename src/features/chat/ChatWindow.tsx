@@ -31,6 +31,7 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [attachments, setAttachments] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<number | null>(null);
 
@@ -69,6 +70,31 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
         // Mark as read if not sent by us
         if (message.senderType !== 'PATIENT') {
           chatSocket.emitMarkAsRead(serviceId, userId);
+        }
+
+        // Attempt to fetch any attachments for this incoming message
+        if (message.messageType === 'IMAGE' || message.messageType === 'FILE' || message.messageType === 'VOICE') {
+          try {
+            const token = localStorage.getItem('accessToken');
+            const headers: Record<string, string> = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            fetch(`/api/chat/file/${message.id}`, { headers }).then(resp => {
+              if (!resp.ok) {
+                if (message.fileUrl) setAttachments(prev => ({ ...prev, [message.id]: message.fileUrl }));
+                return null;
+              }
+              return resp.blob();
+            }).then(blob => {
+              if (blob) {
+                const url = URL.createObjectURL(blob);
+                setAttachments(prev => ({ ...prev, [message.id]: url }));
+              }
+            }).catch(() => {
+              if (message.fileUrl) setAttachments(prev => ({ ...prev, [message.id]: message.fileUrl }));
+            });
+          } catch (e) {
+            // ignore
+          }
         }
       }
     });
@@ -140,8 +166,8 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
     setSending(true);
 
     try {
-      // Send via socket only (server will persist and emit to the room)
-      chatSocket.sendMessage({
+      // Send via socket and await ack (server will persist and emit to the room)
+      const ack = await chatSocket.sendMessage({
         serviceId,
         messageType: 'TEXT',
         messageText: messageContent,
@@ -161,7 +187,20 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
       };
       setMessages(prev => [...prev, tempMsg]);
       scrollToBottom();
+
+      // If socket wasn't connected or server returned an error, fallback to HTTP API
+      if (!ack || !ack.success) {
+        try {
+          await apiClient.sendChatMessage(serviceId, { messageType: 'TEXT', messageText: messageContent });
+        } catch (e) {
+          // Remove optimistic message on failure
+          setMessages(prev => prev.filter(m => m.id !== tempId));
+          toast.error('Failed to send message');
+          setNewMessage(messageContent); // restore
+        }
+      }
     } catch (error) {
+      // Unexpected error while emitting
       toast.error('Failed to send message');
       setNewMessage(messageContent); // Restore message
     } finally {
@@ -287,10 +326,10 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
                                 </p>
                               )
                             ) : null}
-                            {message.messageType === 'IMAGE' && message.fileUrl && (
+                            {message.messageType === 'IMAGE' && (attachments[message.id] || message.fileUrl) && (
                               <div className="space-y-2">
                                 <img
-                                  src={message.fileUrl}
+                                  src={attachments[message.id] || message.fileUrl || `/api/chat/file/${message.id}`}
                                   alt="Sent image"
                                   className="rounded-lg max-w-full"
                                 />
@@ -299,17 +338,46 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
                                 )}
                               </div>
                             )}
-                            {message.messageType === 'FILE' && message.fileUrl && (
+                            {message.messageType === 'FILE' && (attachments[message.id] || message.fileUrl) && (
                               <div className="flex items-center gap-2">
                                 <Paperclip className="h-4 w-4" />
-                                <a
-                                  href={message.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm underline"
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      // if we have a blob URL cached use it, otherwise fetch securely
+                                      let url = attachments[message.id];
+                                      if (!url) {
+                                        const token = localStorage.getItem('accessToken');
+                                        const headers: Record<string, string> = {};
+                                        if (token) headers['Authorization'] = `Bearer ${token}`;
+                                        const resp = await fetch(`/api/chat/file/${message.id}`, { headers });
+                                        if (!resp.ok) {
+                                          // fallback: open public fileUrl if available
+                                          if (message.fileUrl) {
+                                            window.open(message.fileUrl, '_blank');
+                                            return;
+                                          }
+                                          return;
+                                        }
+                                        const blob = await resp.blob();
+                                        url = URL.createObjectURL(blob);
+                                        setAttachments(prev => ({ ...prev, [message.id]: url }));
+                                      }
+
+                                      const a = document.createElement('a');
+                                      a.href = url;
+                                      a.download = message.fileName || 'file';
+                                      document.body.appendChild(a);
+                                      a.click();
+                                      a.remove();
+                                    } catch (e) {
+                                      if (message.fileUrl) window.open(message.fileUrl, '_blank');
+                                    }
+                                  }}
+                                  className="text-sm underline bg-transparent"
                                 >
                                   {message.fileName || 'Download file'}
-                                </a>
+                                </button>
                               </div>
                             )}
                           </div>
