@@ -181,6 +181,20 @@
   }
 
   /* safe padding helper: adds bottom padding equal to bottom nav + safe-area inset */
+
+/* Map containment fixes: ensure leaflet controls and map don't overlap surrounding layout */
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+}
+.leaflet-control {
+  z-index: 1000;
+}
+.map-fixed {
+  position: relative;
+  overflow: hidden;
+}
+
   .pb-safe {
     padding-bottom: calc(var(--app-bottom-height, 88px) + env(safe-area-inset-bottom, 12px));
   }

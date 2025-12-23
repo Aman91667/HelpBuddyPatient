@@ -141,6 +141,7 @@ export default function HomePage() {
                     center={location}
                     markers={[{ position: location, popup: 'You are here', type: 'patient' }]}
                     height="100%"
+                    className="map-fixed"
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-slate-100">

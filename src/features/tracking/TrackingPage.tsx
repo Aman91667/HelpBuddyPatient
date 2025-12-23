@@ -103,7 +103,7 @@ export default function TrackingPage() {
         return;
       }
       if (data.helper) {
-        setService(prev => ({ ...(prev as Service || {}), helper: data.helper } as Service));
+        setService(prev => ({ ...(prev as Service || {}), helper: data.helper, status: 'ACCEPTED' } as Service));
         const loc = data.helper.currentLocation as Location | undefined;
         if (loc && typeof loc.lat === 'number') setHelperLocation(loc);
       }
@@ -386,7 +386,7 @@ export default function TrackingPage() {
                   markers={markers}
                   height="calc-vh"
                   fitToMarkers
-                  className="bg-white/80 dark:bg-slate-900/60"
+                  className="bg-white/80 dark:bg-slate-900/60 map-fixed"
                 />
 
               {/* Floating info card on map */}

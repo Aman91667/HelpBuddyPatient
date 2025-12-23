@@ -49,13 +49,21 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
     chatSocket.onNewMessage((message) => {
       if (message.serviceId === serviceId) {
         setMessages(prev => {
-          // Check if message already exists
+          // If we already have this id, replace
           const exists = prev.find(m => m.id === message.id);
-          if (exists) {
-            return prev.map(m => m.id === message.id ? message : m);
+          if (exists) return prev.map(m => (m.id === message.id ? message : m));
+
+          // Try to match and replace optimistic temp messages (by sender, text and time proximity)
+          const tempIndex = prev.findIndex(m => m.id.startsWith('temp-') && m.senderId === message.senderId && m.message === message.message && Math.abs(new Date(m.createdAt).getTime() - new Date(message.createdAt).getTime()) < 5000);
+          if (tempIndex !== -1) {
+            const copy = [...prev];
+            copy[tempIndex] = message;
+            return copy;
           }
+
           return [...prev, message];
         });
+
         scrollToBottom();
         
         // Mark as read if not sent by us
@@ -132,20 +140,27 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
     setSending(true);
 
     try {
-      const response = await apiClient.post<Message>('/chat/message', {
+      // Send via socket only (server will persist and emit to the room)
+      chatSocket.sendMessage({
         serviceId,
-        message: messageContent,
-        messageType: 'TEXT'
+        messageType: 'TEXT',
+        messageText: messageContent,
       });
 
-      if (response.success && response.data) {
-        // Message will be added via socket event
-        chatSocket.sendMessage({
-          serviceId,
-          messageType: 'TEXT',
-          messageText: messageContent
-        });
-      }
+      // Optimistic UI: add a temporary message until server echoes back
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+      const tempMsg: Message = {
+        id: tempId,
+        serviceId,
+        senderId: localStorage.getItem('userId') || 'me',
+        senderType: 'PATIENT',
+        message: messageContent,
+        messageType: 'TEXT',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, tempMsg]);
+      scrollToBottom();
     } catch (error) {
       toast.error('Failed to send message');
       setNewMessage(messageContent); // Restore message
@@ -260,14 +275,14 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
                             className={`rounded-2xl px-4 py-2 ${
                               isOwn
                                 ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
-                                : 'bg-slate-100 text-black'
+                                : 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100'
                             }`}
                           >
                             {message.messageType === 'TEXT' ? (
                               message.message ? (
-                                <p className={`text-sm break-words ${isOwn ? 'text-white' : 'text-black'}`}>{message.message}</p>
+                                <p className={`text-sm break-words ${isOwn ? 'text-white' : 'text-slate-900 dark:text-slate-100'}`}>{message.message}</p>
                               ) : (
-                                <p className={`text-xs italic ${isOwn ? 'text-white/70' : 'text-black/50'}`}>
+                                <p className={`text-xs italic ${isOwn ? 'text-white/70' : 'text-slate-700/50 dark:text-slate-300/50'}`}>
                                   [Message data: {JSON.stringify({ type: message.messageType, hasMsg: !!message.message })}]
                                 </p>
                               )
@@ -280,7 +295,7 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
                                   className="rounded-lg max-w-full"
                                 />
                                 {message.message && (
-                                  <p className={`text-sm ${isOwn ? 'text-white' : 'text-black'}`}>{message.message}</p>
+                                  <p className={`text-sm ${isOwn ? 'text-white' : 'text-slate-900 dark:text-slate-100'}`}>{message.message}</p>
                                 )}
                               </div>
                             )}

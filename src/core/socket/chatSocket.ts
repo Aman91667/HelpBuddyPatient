@@ -9,7 +9,9 @@ class ChatSocketClient {
       return this.socket;
     }
 
-    this.socket = io('http://localhost:3000/chat', {
+    const apiUrl = import.meta.env.VITE_API_URL ? new URL(import.meta.env.VITE_API_URL).origin : window.location.origin;
+    const ns = `${apiUrl}/chat`;
+    this.socket = io(ns, {
       auth: { token },
       transports: ['websocket', 'polling'],
     });
@@ -63,13 +65,24 @@ class ChatSocketClient {
     filename?: string;
     fileSize?: number;
     mimeType?: string;
+    // optional client-supplied fields
+    senderId?: string;
+    senderType?: 'PATIENT' | 'HELPER';
   }) {
     if (!this.socket) {
       console.warn('[ChatSocket] Socket not connected');
       return;
     }
 
-    this.socket.emit('send:message', data);
+    // Ensure sender info is present for server-side createMessage validation
+    const payload = {
+      ...data,
+      senderId: data.senderId || localStorage.getItem('userId') || undefined,
+      senderType: data.senderType || 'PATIENT',
+      message: data.messageText || data.messageText === '' ? data.messageText : undefined,
+    } as any;
+
+    this.socket.emit('send:message', payload);
   }
 
   onNewMessage(callback: (message: any) => void) {
