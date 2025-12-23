@@ -450,27 +450,29 @@ export default function TrackingPage() {
         )}
       </main>
 
-      {/* Mobile bottom sheet */}
-      <div className="fixed left-0 right-0 bottom-0 z-50 sm:hidden">
-        <div className="max-w-5xl mx-auto px-4 pb-safe">
-          <div className="bg-white/95 border-t border-gray-100 p-3 rounded-t-2xl shadow-xl backdrop-blur">
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <div className="text-sm font-semibold">{helperName}</div>
-                <div className="text-xs text-slate-500">{formatDistance(meters)} away • {service.estimatedArrivalTime || '—'}</div>
-              </div>
+      {/* Mobile bottom sheet (hidden while chat is open to avoid overlap) */}
+      {!showChat && (
+        <div className="fixed left-0 right-0 bottom-0 z-40 sm:hidden">
+          <div className="max-w-5xl mx-auto px-4 pb-safe">
+            <div className="bg-white/95 border-t border-gray-100 p-3 rounded-t-2xl shadow-xl backdrop-blur">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="text-sm font-semibold">{helperName}</div>
+                  <div className="text-xs text-slate-500">{formatDistance(meters)} away • {service.estimatedArrivalTime || '—'}</div>
+                </div>
 
-              <div className="flex gap-2">
-                <Button onClick={() => { /* call */ }} className="px-3 py-2 rounded-lg">Call</Button>
-                {/* Show Chat button only after helper accepts */}
-                {(service.status === 'ACCEPTED' || service.status === 'HELPER_ARRIVED' || service.status === 'IN_PROGRESS') && (
-                  <Button variant="outline" onClick={() => setShowChat(true)} className="px-3 py-2 rounded-lg">Chat</Button>
-                )}
+                <div className="flex gap-2">
+                  <Button onClick={() => { /* call */ }} className="px-3 py-2 rounded-lg">Call</Button>
+                  {/* Show Chat button only after helper accepts */}
+                  {(service.status === 'ACCEPTED' || service.status === 'HELPER_ARRIVED' || service.status === 'IN_PROGRESS') && (
+                    <Button variant="outline" onClick={() => setShowChat(true)} className="px-3 py-2 rounded-lg">Chat</Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Rating Modal */}
       <RatingModal

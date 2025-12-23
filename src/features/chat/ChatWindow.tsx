@@ -211,14 +211,14 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.95, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[600px] flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] sm:h-[600px] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -367,7 +367,7 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t bg-slate-50">
+        <div className="p-4 border-t bg-slate-50 pb-safe">
           <div className="flex items-end gap-2">
             <Button
               variant="ghost"
