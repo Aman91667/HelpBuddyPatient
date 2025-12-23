@@ -112,10 +112,19 @@ export const Map = ({ center, markers = [], zoom = 17, height = '400px', fitToMa
 
   // Allow callers to request a viewport-aware full-height map using the
   // special height token `calc-vh`. This computes: 100vh - header - bottom.
-  const resolvedHeight =
+  let resolvedHeight =
     height === 'calc-vh'
       ? `calc(100vh - var(--app-header-height,64px) - var(--app-bottom-height,88px))`
       : height;
+
+  // On small screens prefer a compact map height to avoid overlapping other UI
+  if (typeof window !== 'undefined' && window.innerWidth < 640) {
+    if (height === 'calc-vh') {
+      resolvedHeight = `calc(60vh - var(--app-header-height,64px))`;
+    } else {
+      resolvedHeight = '50vh';
+    }
+  }
 
   return (
     <div className={`w-full rounded-2xl border border-border bg-card shadow-xl overflow-hidden ${className}`} style={{ height: resolvedHeight }}>

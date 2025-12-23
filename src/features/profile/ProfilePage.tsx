@@ -93,7 +93,7 @@ const ProfilePage = () => {
                 Edit
               </Button>
 
-              <Button variant="outline" onClick={() => navigate('/my-services')} className="px-4 py-2 rounded-lg flex items-center gap-2">
+              <Button variant="outline" onClick={() => navigate(ROUTES.HISTORY)} className="px-4 py-2 rounded-lg flex items-center gap-2">
                 <ExternalLink className="h-4 w-4" />
                 My services
               </Button>

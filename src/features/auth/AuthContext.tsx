@@ -308,13 +308,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = async (opts?: { global?: boolean }) => {
+    const { global = false } = opts || {};
     try {
-      // Logout server will clear refresh-token cookie (httpOnly). No need to send token in body.
-      await apiClient.post('/auth/logout');
+      // By default perform a local-only logout (do not revoke refresh token on server)
+      // This keeps other devices / sessions logged in. To revoke server-side session pass { global: true }.
+      if (global) {
+        try {
+          await apiClient.post('/auth/logout');
+        } catch (err) {
+          console.error('Logout (global) error:', err);
+        }
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Always clear local session state
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       try { localStorage.removeItem('activeServiceId'); } catch {}

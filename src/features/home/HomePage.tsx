@@ -32,25 +32,27 @@ export default function HomePage() {
 
     const fetchSummary = async () => {
       try {
-        const [breakdownResp, favResp] = await Promise.all([
-          apiClient.getPatientServiceBreakdown(),
+        const [requestsResp, satsResp, favResp] = await Promise.all([
+          apiClient.getPatientRequestsToday(),
+          apiClient.getPatientSatisfaction(),
           apiClient.getFavoriteHelpers(5),
         ]);
 
         if (!mounted) return;
 
-        if (breakdownResp.success && breakdownResp.data) {
-          const breakdown = breakdownResp.data as any;
-          // Total active/ongoing requests today (approx): use breakdown's recent count if available
-          const total = (breakdown.breakdown || []).reduce((s: number, it: any) => s + (it.count || 0), 0);
-          setRequestsToday(total || 0);
+        if (requestsResp.success && requestsResp.data) {
+          setRequestsToday(requestsResp.data.count || 0);
+        }
+
+        if (satsResp.success && satsResp.data) {
+          setSatisfaction(satsResp.data.avgRating || 0);
         }
 
         if (favResp.success && favResp.data) {
           const favs = favResp.data as any[];
           setNearbyHelpers(favs.length || 0);
-          // approximate satisfaction by averaging helper avgRating in favorites
-          if (favs.length > 0) {
+          // fallback: approximate satisfaction by averaging helper avgRating in favorites if not returned by satsResp
+          if ((!satsResp.success || !satsResp.data) && favs.length > 0) {
             const avg = favs.reduce((s: number, it: any) => s + (it.avgRating || 0), 0) / favs.length;
             setSatisfaction(Number(avg.toFixed(1)));
           }

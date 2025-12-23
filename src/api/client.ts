@@ -401,6 +401,14 @@ class ApiClient {
     return this.request<any>('GET', `/analytics/patient/spending?${params.toString()}`);
   }
 
+  async getPatientRequestsToday() {
+    return this.request<any>('GET', '/analytics/patient/requests-today');
+  }
+
+  async getPatientSatisfaction() {
+    return this.request<any>('GET', '/analytics/patient/satisfaction');
+  }
+
   async getPatientServiceBreakdown() {
     return this.request<any>('GET', '/analytics/patient/service-breakdown');
   }
