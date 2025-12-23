@@ -441,9 +441,22 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
               variant="ghost"
               size="icon"
               className="text-slate-400 hover:text-slate-600"
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach file"
             >
-              <Paperclip className="h-5 w-5" />
+              {uploading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-400" />
+              ) : (
+                <Paperclip className="h-5 w-5" />
+              )}
             </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleFileChange}
+              accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,audio/*"
+            />
             
             <div className="flex-1 bg-white border rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500">
               <textarea

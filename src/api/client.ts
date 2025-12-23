@@ -354,7 +354,8 @@ class ApiClient {
     formData.append('messageType', messageType);
 
     const token = localStorage.getItem('accessToken');
-    const response = await axios.post('/chat/upload', formData, {
+    // Use the configured client instance (baseURL includes /api) so uploads go to /api/chat/upload
+    const response = await this.client.post('/chat/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         ...(token && { Authorization: `Bearer ${token}` }),

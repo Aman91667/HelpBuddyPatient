@@ -195,8 +195,15 @@
   overflow: hidden;
 }
 
-  .pb-safe {
-    padding-bottom: calc(var(--app-bottom-height, 88px) + env(safe-area-inset-bottom, 12px));
+  @media (max-width: 640px) {
+    .map-fixed {
+      padding-bottom: 4.5rem;
+    }
+
+    .chat-button {
+      position: relative;
+      z-index: 60;
+    }
   }
 
   /* Text Gradients */

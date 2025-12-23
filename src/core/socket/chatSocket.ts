@@ -99,6 +99,8 @@ class ChatSocketClient {
       senderType: data.senderType || 'PATIENT',
       // Use nullish coalescing to correctly pick empty strings too
       message: data.messageText ?? (data as any).message ?? undefined,
+      // Normalize file name casing so server will receive `fileName` (Prisma expects camelCase)
+      fileName: (data as any).fileName ?? (data as any).filename ?? undefined,
     } as any;
 
     return new Promise((resolve) => {
@@ -121,9 +123,19 @@ class ChatSocketClient {
   }
 
   onNewMessage(callback: (message: any) => void) {
-    // Listen for both service-room broadcasts and direct-to-user message notifications
-    this._registerListener('message:received', callback);
-    this._registerListener('message:new', callback);
+    // Listen for service-room broadcasts (payload is the message object)
+    this._registerListener('message:received', (msg: any) => {
+      callback(msg);
+    });
+
+    // Listen for direct-to-user notifications (payload may be { serviceId, message })
+    this._registerListener('message:new', (payload: any) => {
+      if (payload && payload.message) {
+        callback(payload.message);
+      } else {
+        callback(payload);
+      }
+    });
   }
 
   onMessageRead(callback: (data: any) => void) {
