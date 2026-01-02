@@ -217,6 +217,33 @@ export const Map = ({ center, markers = [], zoom = 17, height = '400px', fitToMa
 
   const adjustedMarkers = clusterNearbyMarkers(markers, zoom);
 
+  // Component wrapper for markercluster plugin so hooks run inside React render tree
+  const MarkerClusterLayer = ({ markers: clusterMarkers }: { markers: MapProps['markers'] }) => {
+    const map = useMap();
+
+    useEffect(() => {
+      // @ts-ignore - plugin may not have types
+      const Cluster = (L as any).markerClusterGroup;
+      if (!Cluster) return;
+      const group = Cluster({ spiderfyOnMaxZoom: true, showCoverageOnHover: true, maxClusterRadius: 50, disableClusteringAtZoom: 18 });
+
+      (clusterMarkers || []).forEach((m) => {
+        if (!m?.position) return;
+        const icon = m.type === 'helper' ? helperIcon : patientIcon;
+        const mk = L.marker([m.position.lat, m.position.lng], { icon });
+        if (m.popup) mk.bindPopup(String(m.popup));
+        group.addLayer(mk);
+      });
+
+      map.addLayer(group);
+      return () => {
+        try { map.removeLayer(group); } catch (e) { /* ignore */ }
+      };
+    }, [map, JSON.stringify(clusterMarkers || [])]);
+
+    return null;
+  };
+
   return (
     <div className={`w-full rounded-2xl border border-border bg-card shadow-xl overflow-hidden ${className}`} style={{ height: resolvedHeight, paddingBottom: typeof window !== 'undefined' && window.innerWidth < 640 ? '4.5rem' : undefined }}>
       <MapContainer
@@ -238,29 +265,7 @@ export const Map = ({ center, markers = [], zoom = 17, height = '400px', fitToMa
         {
           // @ts-ignore
           (L as any).markerClusterGroup ? (
-            (function MarkerClusterLayer({ markers: clusterMarkers }: { markers: MapProps['markers'] }) {
-              const map = useMap();
-              // Add plugin markers imperatively to the cluster group
-              useEffect(() => {
-                // @ts-ignore
-                const Cluster = (L as any).markerClusterGroup;
-                const group = Cluster({ spiderfyOnMaxZoom: true, showCoverageOnHover: true, maxClusterRadius: 50, disableClusteringAtZoom: 18 });
-
-                (clusterMarkers || []).forEach((m) => {
-                  if (!m?.position) return;
-                  const icon = m.type === 'helper' ? helperIcon : patientIcon;
-                  const mk = L.marker([m.position.lat, m.position.lng], { icon });
-                  if (m.popup) mk.bindPopup(String(m.popup));
-                  group.addLayer(mk);
-                });
-
-                map.addLayer(group);
-                return () => {
-                  try { map.removeLayer(group); } catch (e) { /* ignore */ }
-                };
-              }, [map, JSON.stringify(clusterMarkers || [])]);
-              return null;
-            })( { markers } )
+            <MarkerClusterLayer markers={markers} />
           ) : (
             adjustedMarkers.map((marker, index) => {
               // Guard: marker.position must be valid
