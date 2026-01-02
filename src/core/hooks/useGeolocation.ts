@@ -26,39 +26,76 @@ export const useGeolocation = () => {
     setIsLoading(true);
     setError(null);
 
-    watchIdRef.current = navigator.geolocation.watchPosition(
+    // First attempt a single getCurrentPosition to ensure the browser shows
+    // the permission prompt in contexts where implicit watchPosition may be
+    // suppressed (some mobile browsers require a user gesture or explicit get).
+    navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
+        setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
         setPermissionStatus('granted');
         setIsLoading(false);
+
+        // After initial success, start watching for updates
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (pos) => {
+            setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            setPermissionStatus('granted');
+            setIsLoading(false);
+          },
+          (watchErr) => {
+            let errorMessage = 'Failed to get your location';
+            if (watchErr.code === watchErr.PERMISSION_DENIED) {
+              setPermissionStatus('denied');
+              errorMessage = 'Location permission denied. Please enable it in your browser settings.';
+            } else if (watchErr.code === watchErr.TIMEOUT) {
+              errorMessage = 'Location request timed out. Retrying...';
+            } else {
+              errorMessage = watchErr.message;
+              setIsLoading(false);
+            }
+            setError(errorMessage);
+            if (watchErr.code === watchErr.PERMISSION_DENIED) {
+              toast.error(errorMessage);
+              setIsLoading(false);
+            }
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 20000,
+            maximumAge: 5000,
+          }
+        );
       },
       (err) => {
+        // If getCurrentPosition fails, handle permission denial explicitly.
         let errorMessage = 'Failed to get your location';
         if (err.code === err.PERMISSION_DENIED) {
           setPermissionStatus('denied');
           errorMessage = 'Location permission denied. Please enable it in your browser settings.';
+          toast.error(errorMessage);
+          setIsLoading(false);
         } else if (err.code === err.TIMEOUT) {
-          errorMessage = 'Location request timed out. Retrying...';
-          // Don't clear loading state on timeout in watch mode, it might succeed next time
+          // If initial request times out, still attempt to start watchPosition
+          setError('Initial location request timed out. Attempting continuous tracking...');
+          watchIdRef.current = navigator.geolocation.watchPosition(
+            (pos) => {
+              setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+              setPermissionStatus('granted');
+              setIsLoading(false);
+            },
+            (watchErr) => {
+              setError(watchErr.message || 'Failed to watch location');
+              setIsLoading(false);
+            },
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
+          );
         } else {
           errorMessage = err.message;
-          setIsLoading(false);
-        }
-
-        setError(errorMessage);
-        if (err.code === err.PERMISSION_DENIED) {
-          toast.error(errorMessage);
+          setError(errorMessage);
           setIsLoading(false);
         }
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 5000, // Accept slightly cached positions for better performance
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
   };
 
