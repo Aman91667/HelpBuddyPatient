@@ -208,66 +208,86 @@ class ApiClient {
 
     try {
       const promise = (async () => {
-        try {
-          const response = await this.client.request<ApiResponse<T>>({ method, url, data, ...(config || {}) });
-          // cache GET responses briefly
-          if (method.toUpperCase() === 'GET') {
-            this.cache.set(key, { ts: Date.now(), data: response.data as ApiResponse<any> });
-          }
-          return response.data;
-        } catch (error) {
-          if (axios.isAxiosError(error)) {
-            // If backend responded with 429, set a short backoff window. Honor
-            // the Retry-After header if present, otherwise use a conservative
-            // default (5s instead of 2s to reduce hammering).
-            const status = error.response?.status;
-            if (status === 429) {
-              const retryAfterHeader = (error.response?.headers as any)?.['retry-after'];
-              let retryAfterMs = 5000; // Increased from 2000 to 5000
-              if (retryAfterHeader) {
-                const parsed = parseInt(String(retryAfterHeader), 10);
-                if (!Number.isNaN(parsed) && parsed > 0) retryAfterMs = parsed * 1000;
+        let attempt = 0;
+        let backoffMs = 1000;
+        while (attempt <= 3) {
+          try {
+            const response = await this.client.request<ApiResponse<T>>({ method, url, data, ...(config || {}) });
+            // cache GET responses briefly
+            if (method.toUpperCase() === 'GET') {
+              this.cache.set(key, { ts: Date.now(), data: response.data as ApiResponse<any> });
+            }
+            return response.data;
+          } catch (error) {
+            if (axios.isAxiosError(error)) {
+              const status = error.response?.status;
+
+              // If 5xx, treat as transient and retry with backoff
+              if (status && status >= 500 && status < 600 && attempt < 3) {
+                if (import.meta.env.DEV) console.warn('[API] transient 5xx error, retrying', status, 'attempt', attempt + 1);
+                await new Promise((res) => setTimeout(res, backoffMs));
+                attempt += 1;
+                backoffMs *= 2;
+                continue;
               }
 
-              // If we recently set a rate limit, increment the count to increase
-              // the backoff multiplier. Otherwise reset.
-              const since = Date.now() - this.lastRateLimitAt;
-              if (since < 60_000) {
-                this.rateLimitCount = Math.min(this.rateLimitCount + 1, 4); // Reduced max from 6 to 4
-              } else {
-                this.rateLimitCount = 1;
+              // If backend responded with 429, set a short backoff window. Honor
+              // the Retry-After header if present, otherwise use a conservative
+              // default (5s instead of 2s to reduce hammering).
+              if (status === 429) {
+                const retryAfterHeader = (error.response?.headers as any)?.['retry-after'];
+                let retryAfterMs = 5000; // Increased from 2000 to 5000
+                if (retryAfterHeader) {
+                  const parsed = parseInt(String(retryAfterHeader), 10);
+                  if (!Number.isNaN(parsed) && parsed > 0) retryAfterMs = parsed * 1000;
+                }
+
+                // If we recently set a rate limit, increment the count to increase
+                // the backoff multiplier. Otherwise reset.
+                const since = Date.now() - this.lastRateLimitAt;
+                if (since < 60_000) {
+                  this.rateLimitCount = Math.min(this.rateLimitCount + 1, 4); // Reduced max from 6 to 4
+                } else {
+                  this.rateLimitCount = 1;
+                }
+                this.lastRateLimitAt = Date.now();
+
+                // exponential-ish backoff factor, capped to avoid extremely long waits
+                const factor = Math.min(Math.pow(2, this.rateLimitCount - 1), 8); // Reduced from 16 to 8
+                const finalMs = Math.min(retryAfterMs * factor, 30_000); // Reduced max from 60s to 30s
+                this.rateLimitUntil = Date.now() + finalMs;
+
+                // Broadcast a short-lived event so UI components (pollers) can pause
+                try {
+                  window.dispatchEvent(new CustomEvent('api:rate-limited', { detail: { until: this.rateLimitUntil, ms: finalMs } }));
+                } catch {
+                  // ignore
+                }
+
+                if (import.meta.env.DEV) console.warn('[API] received 429, backing off for', finalMs, 'ms (factor', factor, ')');
               }
-              this.lastRateLimitAt = Date.now();
 
-              // exponential-ish backoff factor, capped to avoid extremely long waits
-              const factor = Math.min(Math.pow(2, this.rateLimitCount - 1), 8); // Reduced from 16 to 8
-              const finalMs = Math.min(retryAfterMs * factor, 30_000); // Reduced max from 60s to 30s
-              this.rateLimitUntil = Date.now() + finalMs;
-
-              // Broadcast a short-lived event so UI components (pollers) can pause
-              try {
-                window.dispatchEvent(new CustomEvent('api:rate-limited', { detail: { until: this.rateLimitUntil, ms: finalMs } }));
-              } catch {
-                // ignore
-              }
-
-              if (import.meta.env.DEV) console.warn('[API] received 429, backing off for', finalMs, 'ms (factor', factor, ')');
+              // try to extract a useful server error; fall back to message
+              const serverErr = (error.response && (error.response.data as { error?: string; message?: string })) || null;
+              const message = serverErr?.error || serverErr?.message || error.message;
+              return {
+                success: false,
+                error: message,
+              } as ApiResponse<T>;
             }
 
-            // try to extract a useful server error; fall back to message
-            const serverErr = (error.response && (error.response.data as { error?: string; message?: string })) || null;
-            const message = serverErr?.error || serverErr?.message || error.message;
             return {
               success: false,
-              error: message,
+              error: 'An unexpected error occurred',
             } as ApiResponse<T>;
           }
-
-          return {
-            success: false,
-            error: 'An unexpected error occurred',
-          } as ApiResponse<T>;
         }
+
+        // if we exit retry loop, return failure
+        return {
+          success: false,
+          error: 'Server unavailable after retries',
+        } as ApiResponse<T>;
       })();
 
       // register in-flight tracker for dedupe (for all GET requests)
