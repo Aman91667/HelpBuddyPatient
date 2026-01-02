@@ -135,7 +135,7 @@ export const Map = ({ center, markers = [], zoom = 17, height = '400px', fitToMa
 
   // Simple de-cluttering: group markers that are very close and spread them
   const clusterNearbyMarkers = (markersList: MapProps['markers'], currentZoom: number) => {
-    if (!markersList || markersList.length <= 1) return markersList.map(m => ({ ...m, adjustedPos: m.position }));
+    if (!markersList || markersList.length <= 1) return (markersList || []).map(m => ({ ...m, adjustedPos: m.position }));
 
     // Haversine distance (meters)
     const distMeters = (a: Location, b: Location) => {
@@ -188,12 +188,12 @@ export const Map = ({ center, markers = [], zoom = 17, height = '400px', fitToMa
           const lngOffset = (radiusMeters * Math.sin(angle)) / (111111 * Math.cos((center.lat * Math.PI) / 180));
 
           // find a marker matching this location that doesn't yet have an adjustedPos
-          const matchIndex = markersList.findIndex((mm, k) => {
+          const matchIndex = markersList.findIndex((mm) => {
             return mm.position.lat === group[i].lat && mm.position.lng === group[i].lng && adjusted.findIndex(a => a === mm) === -1;
           });
 
           // fallback: match by proximity
-          const fallbackIndex = markersList.findIndex((mm, k) => distMeters(mm.position, group[0]) < 20 && !adjusted.some(a => a === mm));
+          const fallbackIndex = markersList.findIndex((mm) => distMeters(mm.position, group[0]) < 20 && !adjusted.some(a => a === mm));
           const usedIndex = matchIndex !== -1 ? matchIndex : fallbackIndex;
           if (usedIndex === -1) continue;
 

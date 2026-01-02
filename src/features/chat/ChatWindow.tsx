@@ -34,6 +34,8 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
   const [attachments, setAttachments] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadMessages();
@@ -141,7 +143,7 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
     setLoading(true);
     try {
       const response = await apiClient.get<Message[]>(`/chat/service/${serviceId}/messages`);
-      if (response.success && response.data) {
+      if (response && 'success' in response && response.success && response.data) {
         setMessages(response.data);
         scrollToBottom();
       }
@@ -149,6 +151,42 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
       toast.error('Failed to load messages');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
+    const messageType = file.type.startsWith('image') ? 'IMAGE' : 'FILE';
+    setUploading(true);
+    try {
+      const uploadResp: any = await apiClient.uploadChatFile(file, messageType as any);
+      // uploadResp may be the raw axios response data; try common keys
+      const fileUrl = uploadResp?.data?.fileUrl || uploadResp?.fileUrl || uploadResp?.url || uploadResp?.data?.url;
+
+      // send via socket
+      const ack = await chatSocket.sendMessage({
+        serviceId,
+        messageType: messageType as any,
+        fileUrl,
+        filename: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      });
+
+      if (!ack || !(ack as any).success) {
+        // fallback to HTTP API if socket failed
+        try {
+          await apiClient.sendChatMessage(serviceId, { messageType: messageType as any, messageText: '', });
+        } catch {
+          toast.error('Failed to send attachment');
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to upload file');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -189,7 +227,7 @@ export function ChatWindow({ serviceId, helperName, onClose }: ChatWindowProps) 
       scrollToBottom();
 
       // If socket wasn't connected or server returned an error, fallback to HTTP API
-      if (!ack || !ack.success) {
+      if (!ack || !(ack as any).success) {
         try {
           await apiClient.sendChatMessage(serviceId, { messageType: 'TEXT', messageText: messageContent });
         } catch (e) {
