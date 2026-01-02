@@ -1,6 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'https://helpbuddyback.onrender.com/realtime';
+const WS_URL = import.meta.env.DEV
+  ? '/socket.io'
+  : (import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://helpbuddyback.onrender.com');
 
 class SocketClient {
   private socket: Socket | null = null;
@@ -70,7 +72,8 @@ class SocketClient {
   }
 
   private initSocketWithToken(token: string): Socket {
-    this.socket = io(WS_URL, { auth: { token }, reconnection: true, reconnectionAttempts: 5, reconnectionDelay: 1000 });
+    const url = WS_URL.endsWith('/realtime') ? WS_URL : `${WS_URL}/realtime`;
+    this.socket = io(url, { auth: { token }, reconnection: true, reconnectionAttempts: 5, reconnectionDelay: 1000 });
 
     this.socket.on('connect', () => {
       if (import.meta.env.DEV) console.debug('[PAT-SOCKET] connected', this.socket?.id);
