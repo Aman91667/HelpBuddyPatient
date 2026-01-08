@@ -124,7 +124,7 @@ const LiveMap = ({ onAddress, height = '68vh', initialCenter = [26.9124, 75.7873
       </MapContainer>
 
       {/* Small floating footer to show selected address */}
-      <div className="absolute left-4 bottom-4 w-[calc(100%-32px)] sm:w-96">
+      <div className="absolute left-2 right-2 bottom-4 sm:left-4 sm:right-auto sm:w-96">
         <div className="p-3 rounded-xl bg-white/95 backdrop-blur border border-gray-100 shadow flex items-center gap-3">
           <div className="w-10 h-10 rounded-md bg-emerald-50 flex items-center justify-center">
             <svg className="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>

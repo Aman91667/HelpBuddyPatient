@@ -112,9 +112,9 @@ export default function RequestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-8 pb-safe">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-start gap-8 lg:gap-12">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-6 sm:py-8 pb-safe px-4 sm:px-0">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6">
+        <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-12">
 
           {/* LEFT: FORM */}
           <motion.div
@@ -230,11 +230,11 @@ export default function RequestPage() {
           </motion.div>
 
           {/* RIGHT: MAP */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }} className="flex-1">
-            <div className="h-[72vh] rounded-3xl overflow-hidden shadow-2xl border border-gray-100 relative">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }} className="hidden lg:flex flex-1">
+            <div className="w-full h-96 lg:h-[72vh] rounded-3xl overflow-hidden shadow-2xl border border-gray-100 relative">
               <LiveMap onAddress={(addr) => setValue('landmark', addr)} />
 
-              <div className="absolute left-6 bottom-6 w-[calc(100%-96px)] sm:w-96">
+              <div className="absolute left-4 right-4 bottom-4 sm:left-6 sm:right-auto sm:w-96">
                 <div className="p-3 rounded-xl bg-white/95 backdrop-blur border border-gray-100 shadow flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center">

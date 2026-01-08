@@ -137,7 +137,7 @@ export default function HomePage() {
             </div>
 
             <div className="p-3 sm:p-4 bg-gradient-to-b from-white to-slate-50">
-              <div className="rounded-xl overflow-hidden border bg-white h-[220px] sm:h-[300px] md:h-[420px]">
+              <div className="rounded-xl overflow-hidden border bg-white h-64 sm:h-80 md:h-[420px]">
                 {location ? (
                   <Map
                     center={location}

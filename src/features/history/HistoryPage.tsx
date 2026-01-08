@@ -91,7 +91,7 @@ const HistoryPage = () => {
 
       {/* Content */}
       <main className="max-w-4xl mx-4 sm:mx-auto mt-5">
-        <ScrollArea className="h-[calc(100vh-160px)] px-2">
+        <ScrollArea className="h-96 sm:h-[60vh] px-2">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-pulse h-40 w-full rounded-2xl bg-slate-100" />

@@ -5,6 +5,7 @@ import { socketClient } from '@/api/socket';
 import { apiClient } from '@/api/client';
 import type { Service, Location, ServicePayload } from '@/types';
 import { Map } from '@/components/Map';
+import { useLocation } from '@/hooks/useLocation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { RatingModal } from '@/components/RatingModal';
@@ -39,12 +40,27 @@ export default function TrackingPage() {
   const navigate = useNavigate();
   const [service, setService] = useState<Service | null>(null);
   const [helperLocation, setHelperLocation] = useState<Location | null>(null);
+  const [patientLocation, setPatientLocation] = useState<Location | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  // const [hasRated, setHasRated] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
   const [showChat, setShowChat] = useState(false);
+
+  // Enable location tracking when service is accepted
+  const shouldTrackLocation = service?.status === 'ACCEPTED' || service?.status === 'STARTED';
+  const { location: myLocation } = useLocation({
+    enabled: !!shouldTrackLocation && !!serviceId,
+    serviceId,
+    updateInterval: 5000,
+  });
+
+  // Update patient location state from the hook
+  useEffect(() => {
+    if (myLocation) {
+      setPatientLocation({ lat: myLocation.lat, lng: myLocation.lng });
+    }
+  }, [myLocation]);
 
   const fetchServiceDetails = useCallback(async () => {
     if (!serviceId) return;
@@ -151,7 +167,7 @@ export default function TrackingPage() {
   })();
 
   const markers: Array<{ position: Location; popup?: string; type: 'patient' | 'helper' }> = [
-    { position: service.patientLocation, popup: 'You', type: 'patient' },
+    { position: patientLocation || service.patientLocation, popup: 'You', type: 'patient' },
   ];
   if (helperLocation) markers.push({ position: helperLocation, popup: helperName, type: 'helper' });
 
@@ -380,7 +396,7 @@ export default function TrackingPage() {
         {!showChat && service.status !== 'COMPLETED' && service.status !== 'CANCELLED' && (
           <section className="lg:col-span-2">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08 }} className="rounded-2xl overflow-hidden shadow-lg bg-white">
-              <div className={`relative ${showCancelDialog ? 'pointer-events-none blur-sm opacity-50' : ''}`} style={{ height: 'calc(100vh - var(--app-header-height,64px) - var(--app-bottom-height,88px))' }}>
+              <div className={`relative w-full h-96 sm:h-[60vh] lg:h-[calc(100vh-var(--app-header-height,64px)-var(--app-bottom-height,88px))] ${showCancelDialog ? 'pointer-events-none blur-sm opacity-50' : ''}`}>
                 <Map
                   center={helperLocation || service.patientLocation}
                   markers={markers}
@@ -390,7 +406,7 @@ export default function TrackingPage() {
                 />
 
               {/* Floating info card on map */}
-              <div className="absolute left-4 bottom-16 sm:bottom-12 w-[calc(100%-32px)] sm:w-96">
+              <div className="absolute left-2 right-2 bottom-16 sm:bottom-12 sm:left-4 sm:w-96 sm:right-auto">
                 <div className="p-3 rounded-xl bg-white/90 backdrop-blur border border-gray-100 shadow">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -437,8 +453,7 @@ export default function TrackingPage() {
               initial={{ opacity: 0, scale: 0.95 }} 
               animate={{ opacity: 1, scale: 1 }} 
               transition={{ duration: 0.2 }}
-              className="relative"
-              style={{ height: 'calc(100vh - var(--app-header-height,64px) - var(--app-bottom-height,88px))' }}
+              className="relative w-full h-96 sm:h-[60vh] lg:h-[calc(100vh-var(--app-header-height,64px)-var(--app-bottom-height,88px))]"
             >
               <ChatWindow
                 serviceId={service.id}
