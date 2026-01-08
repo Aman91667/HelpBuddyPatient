@@ -48,7 +48,10 @@ export default function TrackingPage() {
   const [showChat, setShowChat] = useState(false);
 
   // Enable location tracking when service is accepted
-  const shouldTrackLocation = service?.status === 'ACCEPTED' || service?.status === 'STARTED';
+  const shouldTrackLocation =
+  service?.status === 'SEARCHING' ||
+  service?.status === 'HELPER_ARRIVED' ||
+  service?.status === 'IN_PROGRESS';
   const { location: myLocation } = useLocation({
     enabled: !!shouldTrackLocation && !!serviceId,
     serviceId,
